@@ -4,6 +4,7 @@
 
 #include "config.h"
 
+#include <dlfcn.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -16,6 +17,7 @@
 #include "nccl_ofi_tuner.h"
 #include "nccl_ofi_log.h"
 #include "nccl_ofi_math.h"
+#include "nccl_ofi_param.h"
 #include "nccl_ofi_pthread.h"
 #include "nccl_ofi_system.h"
 
@@ -42,6 +44,8 @@ static ncclResult_t nccl_ofi_tuner_destroy(void *context)
 
 static ncclResult_t nccl_ofi_tuner_init(size_t nRanks, size_t nNodes, ncclDebugLogger_t logFunction, void **context)
 {
+	Dl_info info;
+	const char *lib_plugin = "libnccl-net.so";
 	const char *platform_type = NULL;
 	ncclResult_t ret = ncclSuccess;
 	*context = NULL;
@@ -61,6 +65,31 @@ static ncclResult_t nccl_ofi_tuner_init(size_t nRanks, size_t nNodes, ncclDebugL
 	nccl_ofi_tuner_ctx->dims.num_ranks = nRanks;
 	nccl_ofi_tuner_ctx->dims.num_nodes = nNodes;
 
+	/*
+	 * Verify that the tuner is loaded from the nccl_net plugin using dynamic
+	 * linker information.
+	 */
+	if (dladdr((void *)nccl_ofi_tuner_init, &info)) {
+		char *lib_name = basename(info.dli_fname);
+		if (strcmp(lib_name, lib_plugin) == 0) {
+			NCCL_OFI_TRACE(NCCL_TUNING, "Tuner loaded internally with plugin : %s\n", lib_plugin);
+			if (ofi_nccl_enable_tuner()) {
+				NCCL_OFI_INFO(NCCL_TUNING, "NCCL_OFI_TUNER is enabled by the user.");
+			} else {
+				NCCL_OFI_INFO(NCCL_TUNING,
+				              "NCCL_OFI_TUNER is disabled by default. Falling back to NCCL's tuner.");
+				goto exit;
+			}
+		} else {
+			NCCL_OFI_WARN("Unexpected plugin loaded: %s. Expected: %s", lib_name, lib_plugin);
+			ret = ncclInternalError;
+			goto exit;
+		}
+	} else {
+		NCCL_OFI_WARN("Could not determine the caller of the NCCL_OFI_TUNER");
+		ret = ncclInternalError;
+		goto exit;
+	}
 
 	/*
 	 * Retrieve platform type and check if NCCL_OFI_TUNER is supported.

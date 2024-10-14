@@ -234,6 +234,13 @@ OFI_NCCL_PARAM_INT(disable_gdr_required_check, "DISABLE_GDR_REQUIRED_CHECK", 0);
 OFI_NCCL_PARAM_INT(disable_dmabuf, "DISABLE_DMABUF", 0);
 
 /*
+ * Enables the ncclTunerPlugin_v3 linked with the libnccl-net plugin.
+ * When this check is enabled, the tuner can be linked with the plugin, without
+ * having to set the NCCL_TUNER_PLUGIN with the external tuner DSO.
+ */
+OFI_NCCL_PARAM_INT(enable_tuner, "ENABLE_TUNER", 0);
+
+/*
  * Messages sized larger than this threshold will be striped across multiple rails
  */
 OFI_NCCL_PARAM_UINT(min_stripe_size, "MIN_STRIPE_SIZE", (64 * 1024));
