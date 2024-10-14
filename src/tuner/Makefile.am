@@ -15,7 +15,8 @@ if !ENABLE_NEURON
 
 sources += \
 	nccl_ofi_regions.c \
-	nccl_ofi_tuner.c
+	nccl_ofi_tuner.c \
+	../nccl_ofi_system.c
 libinternal_tuner_plugin_la_SOURCES = $(sources)
 libinternal_tuner_plugin_la_LDFLAGS = -avoid-version
 libinternal_tuner_plugin_la_CPPFLAGS = -isystem $(abs_top_srcdir)/3rd-party/nccl/$(DEVICE_INTERFACE)/include
