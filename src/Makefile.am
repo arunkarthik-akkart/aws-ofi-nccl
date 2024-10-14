@@ -25,7 +25,9 @@ sources = \
 	nccl_ofi_pthread.c \
 	nccl_ofi_dmabuf.c \
 	nccl_ofi_ep_addr_list.c \
-	tracepoint.c
+	tracepoint.c \
+	tuner/nccl_ofi_tuner.c \
+	tuner/nccl_ofi_regions.c
 
 if WANT_PLATFORM_AWS
 sources += platform-aws.c
