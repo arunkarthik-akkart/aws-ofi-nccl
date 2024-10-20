@@ -23,6 +23,40 @@ static inline size_t sizeof_schedule(int num_rails)
 }
 
 /*
+ * @brief  This function calculates the optimal number of stripes
+ * for the payload size based on the min_stripe_size.
+ * It first determines the initial number of stripes based on the message size
+ * and a minimum stripe size, ensuring that the result is at least 1 and at
+ * most the number of available rails. The function then adjusts the number of
+ * stripes to be the nearest lower factor of the number of rails.
+ *
+ * @param	size
+ * 		The size of the message being transmitted.
+ * @param 	scheduler_p
+ * 		Pointer to threshold scheduler
+ * @param 	num_rails
+ * 		The number of available rails for transmission.
+ *
+ * @return	Returns the adjusted number of stripes.
+ *
+ */
+static int get_num_stripes(nccl_net_ofi_threshold_scheduler_t *scheduler_p, size_t size, int num_rails)
+{
+	/* Number of stripes is atleast 1 for zero-sized messages and at most equal to num of rails */
+	int num_stripes =
+		(int)NCCL_OFI_MAX(1, NCCL_OFI_MIN(NCCL_OFI_DIV_CEIL(size, scheduler_p->min_stripe_size), (unsigned)num_rails));
+
+	/* Ensure num_stripes is the nearest lower factor of the number of rails */
+	for (int i = num_stripes; i >= 0; i--) {
+		if ((num_rails % i) == 0) {
+			num_stripes = i;
+			break;
+		}
+	}
+	return num_stripes;
+}
+
+/*
  * Internal: Set schedule that multiplexes messages to all rails.
  *
  * A mininal stripe size `max_stripe_size' is calculated (multiple of
@@ -38,13 +72,13 @@ static inline int set_schedule_by_threshold(nccl_net_ofi_threshold_scheduler_t *
 					    nccl_net_ofi_schedule_t *schedule)
 {
 	int ret = 0;
+	int num_stripes = 0;
 
-	/* Number of stripes is atleast 1 for zero-sized messages and at most equal to num of rails */
-	int num_stripes =
-		(int)NCCL_OFI_MAX(1, NCCL_OFI_MIN(NCCL_OFI_DIV_CEIL(size, scheduler->min_stripe_size), (unsigned)num_rails));
-	if (OFI_UNLIKELY(num_rails == 0)) {
+	if (OFI_UNLIKELY(num_rails <= 0)) {
 		return -EINVAL;
 	}
+
+	num_stripes = get_num_stripes(scheduler, size, num_rails);
 
 	assert(num_stripes <= num_rails);
 
