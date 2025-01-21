@@ -58,8 +58,8 @@
 	NCCL_OFI_TRACE_SEND_CTRL_START_NVTX(dev, rail_id, comm, req, msg_seq_num); \
 } while (0);
 
-#define NCCL_OFI_TRACE_SEND_CTRL_END(dev, rail_id, comm, req, msg_seq_num) do { \
-	lttng_ust_tracepoint(nccl_ofi_plugin, Send_ctrl_end, dev, rail_id, comm, req, msg_seq_num); \
+#define NCCL_OFI_TRACE_SEND_CTRL_END(dev, rail_id, comm, req, msg_seq_num, duration) do { \
+	lttng_ust_tracepoint(nccl_ofi_plugin, Send_ctrl_end, dev, rail_id, comm, req, msg_seq_num, duration); \
 	NCCL_OFI_TRACE_SEND_CTRL_END_NVTX(dev, rail_id, comm, req, msg_seq_num); \
 } while (0);
 

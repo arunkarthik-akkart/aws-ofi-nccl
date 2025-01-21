@@ -690,6 +690,9 @@ struct nccl_net_ofi_ep_rail {
 	size_t max_rx_buff_posted;
 	/* Mutex for rx buffer operations */
 	pthread_mutex_t rx_buff_mutex;
+
+	/* Latest CQ Poll timestamp before any completions has been received */
+	struct timespec last_cq_poll_time;
 };
 
 /*

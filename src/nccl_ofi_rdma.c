@@ -1565,6 +1565,7 @@ static int post_eager_copy(nccl_net_ofi_rdma_req_t *req);
 static inline int process_completions(struct fi_cq_data_entry *cq_entry, uint64_t num_cqes, nccl_net_ofi_rdma_device_t *device,
 				      int rail_id)
 {
+	// NCCL_OFI_WARN("akkart process completions : rail id - %d", rail_id);
 	int ret = 0;
 	nccl_net_ofi_rdma_req_t *req = NULL;
 	uint64_t comp_idx = 0, comp_flags = 0;
@@ -1597,7 +1598,13 @@ static inline int process_completions(struct fi_cq_data_entry *cq_entry, uint64_
 
 			} else if (req->type == NCCL_OFI_RDMA_SEND_CTRL) {
 				/* CTRL message send completion */
-				NCCL_OFI_TRACE_SEND_CTRL_END(req->dev_id, rail_id, req->comm, req, req->msg_seq_num);
+				struct timespec current_time;
+				uint64_t time_duration = 0;
+				nccl_net_ofi_rdma_ep_t *ep = rdma_req_get_ep(req);
+				nccl_net_ofi_ep_rail_t *rail = rdma_endpoint_get_rail(ep, rail_id);
+				clock_gettime(CLOCK_REALTIME, &current_time);
+				time_duration = (current_time.tv_sec * 1000000000L + current_time.tv_nsec) - ((rail->last_cq_poll_time).tv_sec * 1000000000L + (rail->last_cq_poll_time).tv_nsec);
+				NCCL_OFI_TRACE_SEND_CTRL_END(req->dev_id, rail_id, req->comm, req, req->msg_seq_num, time_duration);
 				ret = set_send_ctrl_completed(req);
 
 			} else if (req->type == NCCL_OFI_RDMA_SEND) {
@@ -1940,6 +1947,7 @@ static int process_pending_reqs(nccl_net_ofi_rdma_ep_t *ep)
 
 static int ofi_process_cq_rail(nccl_net_ofi_rdma_ep_t *ep, nccl_net_ofi_ep_rail_t *rail)
 {
+	// NCCL_OFI_WARN("akkart ofi_process_cq_rail : rail id - %d", rail->rail_id);
 	struct fi_cq_data_entry cqe_buffers[cq_read_count];
 	ssize_t rc = 0;
 	int ret = 0;
@@ -1965,6 +1973,7 @@ static int ofi_process_cq_rail(nccl_net_ofi_rdma_ep_t *ep, nccl_net_ofi_ep_rail_
 				goto exit;
 			}
 		} else if (rc == -FI_EAGAIN) {
+			clock_gettime(CLOCK_REALTIME, &rail->last_cq_poll_time);
 			/* No completions to process */
 			break;
 		} else {
@@ -2599,6 +2608,7 @@ static int test(nccl_net_ofi_req_t *base_req, int *done, int *size)
 {
 	int ret = 0;
 	nccl_net_ofi_rdma_req_t *req = (nccl_net_ofi_rdma_req_t *)base_req;
+	NCCL_OFI_WARN("akkart Test - Device ID : %d type: %d state %d", req->dev_id, req->type, req->state);
 	*done = 0;
 	assert(req->type == NCCL_OFI_RDMA_WRITE ||
 	       req->type == NCCL_OFI_RDMA_READ ||

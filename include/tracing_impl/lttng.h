@@ -118,7 +118,8 @@ LTTNG_UST_TRACEPOINT_EVENT(
             int, rail_id,
             void *, comm,
             void *, request,
-            uint16_t, msg_seq_num
+            uint16_t, msg_seq_num,
+            uint64_t, duration
     ),
     LTTNG_UST_TP_FIELDS(
             lttng_ust_field_integer(int, dev, dev)
@@ -126,6 +127,7 @@ LTTNG_UST_TRACEPOINT_EVENT(
             lttng_ust_field_integer_hex(uint64_t, comm, (uint64_t)comm)
             lttng_ust_field_integer_hex(uint64_t, request, (uint64_t)request)
             lttng_ust_field_integer(uint16_t, msg_seq_num, msg_seq_num)
+            lttng_ust_field_integer(uint64_t, last_poll_to_complete_duration, (uint64_t)duration)
     )
 )
 
