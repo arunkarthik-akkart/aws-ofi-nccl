@@ -1,0 +1,44 @@
+name: PR CI Single Run
+on: workflow_dispatch
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    container: 
+      image: ghcr.io/${{ github.repository }}/aws-ofi-nccl-dev:latest
+      credentials:
+         username: ${{ github.actor }}
+         password: ${{ secrets.GITHUB_TOKEN }}
+    name: build-test-job
+    steps:
+      - uses: actions/checkout@v3
+      
+      # Since all dependencies are now in the container, you can remove these steps:
+      # - Install EFA Installer Dependencies
+      # - Install hwloc, utilities
+      # - Install CUDA
+      
+      - name: Call `autoreconf -ivf`
+        run: |
+          ./autogen.sh
+
+      - name: Run Configure
+        run: |
+          ./configure --with-mpi=/opt/amazon/openmpi \
+                     --with-libfabric=/opt/amazon/efa \
+                     --enable-tests=yes \
+                     --enable-werror=yes \
+                     --enable-picky-compiler=yes \
+                     --enable-platform-aws \
+                     --with-cuda=/usr/local/cuda/
+
+      - name: Call `make`
+        run: make V=1
+
+      - name: Call `make check`
+        run: make check V=1 || (cat tests/unit/test-suite.log && exit 1)
+
+      - name: Call `make install`
+        run: make install V=1
+
+      - name: Call `make distcheck`
+        run: make distcheck V=1
