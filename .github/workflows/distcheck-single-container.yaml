@@ -1,4 +1,4 @@
-name: Containerized PR CI Single Run
+name: PR CI Single Run Containerized
 on: workflow_dispatch
 jobs:
   build-test:
